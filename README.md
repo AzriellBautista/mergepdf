@@ -141,9 +141,15 @@ $ mergepdf -P "documents/*.pdf"
 $ mergepdf -P "**/scan-*.pdf"
 ```
 
-- The part before the first wildcard is the directory to scan. `documents/*.pdf`
-  scans `documents`; a pattern that starts with a wildcard is matched against the
-  current directory.
+- The leading directory components, up to the first one containing a wildcard,
+  are the directory to scan. `documents/sub/*.pdf` scans `documents/sub`. Two
+  cases are worth knowing:
+  - A wildcard in a *directory* component sends the whole match to the current
+    directory, because `a*` is a pattern rather than a name that exists. So
+    `-P "a*/x.pdf"` is matched from the working directory, not from `a`.
+  - A wildcard in the *last* component is matched within its directory, and
+    `[...]` is a character class there. So `-P "odd/report[12].pdf"` scans
+    `odd` and matches `report1.pdf` and `report2.pdf`.
 - `--recursive` widens a pattern that does not already contain `**` so it also
   matches in subdirectories: `-P "documents/*.pdf" -r`. A pattern that already
   says `**` is as wide as it gets, with or without `-r`.
@@ -254,6 +260,12 @@ so the quoting matters twice over.
 By default files are merged in the order you supplied them. For a directory,
 that means a pre-order walk: entries sorted alphabetically at each level,
 descending into subdirectories only with `-r`.
+
+`--pattern` is the exception. A glob match has no supplied order, so its results
+are sorted by path to begin with, which is what makes two runs over one tree
+produce the same output. `--order` still applies on top: for a single pattern it
+is a no-op, since both orderings are by path, but with several patterns, or a
+pattern mixed with `FILE` arguments, it re-sorts across all of them.
 
 `--order` changes that, and `--sort` chooses the direction:
 
@@ -403,6 +415,24 @@ Note the split between codes 1, 2 and 4 for selection problems: a selection
 that is *syntactically* wrong (`:0`, `:5-2`, `:-2-3`) is rejected by argument
 parsing and exits 2, while a well-formed selection that matches nothing exits
 4. A missing path is an input error and exits 1.
+
+The two newer input sources add cases worth naming, since each is about the
+shape of the request rather than the files it names:
+
+| Situation | Code |
+| --- | --- |
+| No inputs at all: no `FILE`, no `--list`, no `--pattern` | 2 |
+| `--output-dir` combined with `--list` or `--pattern` | 2 |
+| `--pattern` with no wildcard in it, or an absolute one | 2 |
+| `--pattern` whose leading directory does not exist | 1 |
+| `--pattern` that matched no files | 1 |
+| `--list` naming a file that cannot be read | 1 |
+| `--list` entry with a malformed page selection | 1 |
+| `--list` file with no usable entries | 1 |
+
+A bad `--list` line is reported as `file:line`, and it exits 1 rather than 2
+because the command line itself was well formed; it was the file it pointed at
+that was wrong.
 
 ## Verbosity
 

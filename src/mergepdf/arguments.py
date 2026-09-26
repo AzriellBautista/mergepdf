@@ -155,13 +155,16 @@ def _add_inputs(parser: argparse.ArgumentParser) -> None:
         type=parse_pattern,
         help=(
             "Find inputs with a glob, such as 'docs/*.pdf' or '**/scan-*.pdf'. "
-            "The part before the first '*', '?' or '[' is the directory to "
-            "scan; a pattern starting with one is matched against the current "
-            "directory. Matches are sorted so repeated runs agree. With "
-            "--recursive a pattern that does not already contain '**' also "
-            "matches in subdirectories. A pattern that matches nothing is an "
-            "error, even with --skip-invalid. Repeat for more than one "
-            "pattern. Cannot be combined with --output-dir."
+            "The leading directory components, up to the first one holding a "
+            "'*', '?' or '[', are the directory to scan. A wildcard in a "
+            "directory component ('a*/x.pdf') sends the whole match to the "
+            "current directory instead, and a wildcard in the last component "
+            "('odd/report[12].pdf') is matched within its directory. Matches "
+            "are sorted so repeated runs agree. With --recursive a pattern "
+            "that does not already contain '**' also matches in "
+            "subdirectories. A pattern that matches nothing is an error, even "
+            "with --skip-invalid. Repeat for more than one pattern. Cannot be "
+            "combined with --output-dir."
         ),
     )
 
@@ -190,7 +193,8 @@ def _add_output_target(parser: argparse.ArgumentParser) -> None:
         help=(
             "Write one merged PDF per supplied directory, named after that "
             "directory and placed in DIR. Individual FILE arguments are not "
-            "allowed in this mode."
+            "allowed in this mode, and neither are --list or --pattern, which "
+            "name individual files rather than directories."
         ),
     )
 
@@ -293,10 +297,12 @@ def _add_metadata(parser: argparse.ArgumentParser) -> None:
         dest="metadata",
         help=(
             "Set a metadata field on the output, for example "
-            "'--metadata /Title=Annual Report'. The leading slash is optional. "
-            "Repeat for more than one field; if a key is repeated the last "
-            "value wins. Overrides the title and author copied from the first "
-            "input, and the Producer and Creator mergepdf sets by default."
+            "'--metadata /Title=\"Annual Report\"'. The value has a space in "
+            "it, so quote it or your shell will split the argument. The "
+            "leading slash is optional. Repeat for more than one field; if a "
+            "key is repeated the last value wins. Overrides the title and "
+            "author copied from the first input, and the Producer and Creator "
+            "mergepdf sets by default."
         ),
     )
 

@@ -366,6 +366,36 @@ def test_pattern_may_name_a_directory_below_the_base(
     assert listed(result.stdout) == ["d.pdf", "e.pdf"]
 
 
+def test_wildcard_in_a_directory_component_matches_from_the_working_directory(
+    run: Callable[..., CompletedProcess[str]],
+    pdf: Callable[..., Path],
+) -> None:
+    # "ab/" is a pattern, not a directory that exists, so the whole match is
+    # resolved against the working directory rather than against a base of "ab".
+    pdf("abc/one.pdf", 1)
+    pdf("zzz/two.pdf", 1)
+
+    result = run("-P", "ab*/one.pdf", "--dry-run")
+
+    assert result.returncode == 0, result.stderr
+    assert listed(result.stdout) == ["one.pdf"]
+
+
+def test_bracket_pattern_with_no_directory_is_matched_from_the_working_directory(
+    run: Callable[..., CompletedProcess[str]],
+    pdf: Callable[..., Path],
+) -> None:
+    # With no separator there is no directory component at all, so the whole
+    # pattern is the last component and is matched in the current directory.
+    pdf("report1.pdf", 1)
+    pdf("report2.pdf", 1)
+
+    result = run("-P", "report[12].pdf", "--dry-run")
+
+    assert result.returncode == 0, result.stderr
+    assert listed(result.stdout) == ["report1.pdf", "report2.pdf"]
+
+
 def test_several_patterns_are_appended_in_order(
     run: Callable[..., CompletedProcess[str]],
     tree: None,
