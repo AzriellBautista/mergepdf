@@ -1,0 +1,82 @@
+[project]
+name = "mergepdf"
+version = "1.0.0"
+description = "Merge multiple PDF files, with optional page selections, into a single PDF"
+readme = "README.md"
+authors = [
+    { name = "AzriellBautista", email = "63571795+AzriellBautista@users.noreply.github.com" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "pypdf>=6.19.0",
+]
+keywords = ["pdf", "merge", "combine", "pypdf", "cli"]
+classifiers = [
+    "Environment :: Console",
+    "Intended Audience :: End Users/Desktop",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Utilities",
+]
+
+[project.scripts]
+mergepdf = "mergepdf:run"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+    "ruff>=0.16.9",
+    "ty>=0.0.84",
+]
+
+[build-system]
+requires = ["uv_build>=0.12.5,<0.13.0"]
+build-backend = "uv_build"
+
+[tool.ty.src]
+include = ["src", "tests"]
+
+[tool.ruff]
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = [
+    "ANN401",    # AnyStr would fight the argparse and pypdf signatures
+    "COM812",    # conflicts with the formatter
+    "CPY001",    # no copyright headers; the licence is in the repository
+    "D203",      # incompatible with D211
+    "D213",      # incompatible with D212
+    "EM101",     # messages belong at the raise site, not in a class
+    "EM102",     # messages belong at the raise site, not in a class
+    "ISC001",    # conflicts with the formatter
+    "T201",      # printing to stdout is how a CLI reports results
+    "TRY003",    # long messages outside the exception class, same reasoning
+    "TRY400",    # a plain .error() plus -vv traceback is the intended output
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = [
+    "ARG",     # subprocess calls read better positionally
+    "D",       # test names are the documentation
+    "FBT",     # booleans read better inline in a CLI invocation
+    "INP001",  # tests/ is a plain directory, not a package
+    "PLC0415", # local imports keep pypdf usage obvious
+    "PLR0913", # fixtures plus parametrised values exceed the default
+    "PLR0917",
+    "PLR2004", # literal page counts are the point
+    "S",       # asserts and subprocess use are what tests are
+    "SLF001",  # tests may reach into internals
+    "T201",    # nothing prints, but keep it explicit
+]
+
+[tool.ruff.lint.flake8-pytest-style]
+fixture-parentheses = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q --strict-markers"
+
+[tool.uv.workspace]
+members = [
+    "mergepdf",
+]
