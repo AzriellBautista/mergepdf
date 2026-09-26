@@ -63,7 +63,7 @@ class InputSpec:
         return (identity(self.path), self.selection_key)
 
     @property
-    def bookmark(self) -> str:
+    def outline_name(self) -> str:
         """The name this input contributes to the output outline."""
         name = self.path.stem or self.path.name
         if self.selection is not None:

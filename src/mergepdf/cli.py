@@ -37,7 +37,7 @@ def _merge_one(job: Job, args: MergePdfArguments) -> ExitCode | None:
             job.outfile,
             options=MergeOptions(
                 skip_invalid=args.skip_invalid,
-                bookmarks=args.bookmarks,
+                add_outlines=args.add_outlines,
                 import_outlines=args.import_outlines,
             ),
             metadata=args.metadata,

@@ -70,6 +70,12 @@ Examples:
   Merge each folder into its own file:
     mergepdf .\\archive\\2023 .\\archive\\2024 --output-dir .\\out
 
+  Write an output with no outline at all:
+    mergepdf .\\documents --no-outline
+
+  Drop only the per-file outline entries:
+    mergepdf .\\documents --no-add-outlines
+
   Carry on when one file is broken:
     mergepdf .\\documents --recursive --skip-invalid
 
@@ -105,7 +111,8 @@ class MergePdfArguments(argparse.Namespace):
     force: bool
     dry_run: bool
     skip_invalid: bool
-    bookmarks: bool
+    no_outline: bool
+    add_outlines: bool
     import_outlines: bool
     metadata: list[tuple[str, str]]
     quiet: bool
@@ -265,14 +272,29 @@ def _add_output_behaviour(parser: argparse.ArgumentParser) -> None:
     )
 
 
-def _add_bookmarks(parser: argparse.ArgumentParser) -> None:
+def _add_outlines(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
-        "--no-bookmarks",
-        dest="bookmarks",
+        "--no-outline",
+        action="store_true",
+        help=(
+            "Write no outline at all. This is shorthand for passing both "
+            "--no-add-outlines and --no-import-outlines, and it leaves the "
+            "output with no outline entries of any kind, whether mergepdf's "
+            "own per-file entries or ones carried over from the inputs. "
+            "Combining it with either of those flags is allowed but "
+            "redundant."
+        ),
+    )
+
+    parser.add_argument(
+        "--no-add-outlines",
+        dest="add_outlines",
         action="store_false",
         help=(
-            "Do not add an outline entry per merged file. By default each "
-            "input contributes one top-level bookmark."
+            "Do not add an outline entry per merged file, so no entry is "
+            "named after a filename. Outline items already inside the input "
+            "PDFs are still imported; see --no-import-outlines. Use "
+            "--no-outline to remove both."
         ),
     )
 
@@ -281,8 +303,9 @@ def _add_bookmarks(parser: argparse.ArgumentParser) -> None:
         dest="import_outlines",
         action="store_false",
         help=(
-            "Do not carry over the bookmarks already inside each input PDF. "
-            "By default they are imported beneath mergepdf's own entry."
+            "Do not carry over the outline items already inside each input "
+            "PDF. mergepdf's own per-file entry is still added; see "
+            "--no-add-outlines. Use --no-outline to remove both."
         ),
     )
 
@@ -353,7 +376,7 @@ def build_parser() -> argparse.ArgumentParser:
     _add_output_target(parser)
     _add_discovery(parser)
     _add_output_behaviour(parser)
-    _add_bookmarks(parser)
+    _add_outlines(parser)
     _add_metadata(parser)
     _add_verbosity(parser)
 
@@ -374,6 +397,14 @@ def parse_args(argv: Sequence[str] | None = None) -> MergePdfArguments:
     args.metadata = args.metadata or []
     args.list_path = args.list_path or []
     args.pattern = args.pattern or []
+
+    # Resolved here rather than in the parser because --no-outline is a
+    # shorthand for two independent flags, and argparse has no way to say one
+    # flag sets two destinations. Applying it after parsing also means it wins
+    # regardless of the order the flags were given in.
+    if args.no_outline:
+        args.add_outlines = False
+        args.import_outlines = False
 
     if not args.file and not args.list_path and not args.pattern:
         parser.error(
@@ -412,3 +443,10 @@ def log_arguments(args: MergePdfArguments) -> None:
     resolved file order is logged separately by build_job.
     """
     LOGGER.debug("Arguments: %s", args)
+
+    if args.no_outline:
+        LOGGER.debug(
+            "--no-outline resolved to add_outlines=%s import_outlines=%s",
+            args.add_outlines,
+            args.import_outlines,
+        )

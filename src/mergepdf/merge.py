@@ -36,9 +36,9 @@ class MergeResult:
     author: str | None = None
 
 
-def _bookmark_name(spec: InputSpec, used: dict[str, int]) -> str:
+def _outline_name(spec: InputSpec, used: dict[str, int]) -> str:
     """Return a unique outline name for one input."""
-    name = spec.bookmark
+    name = spec.outline_name
     count = used.get(name, 0) + 1
     used[name] = count
     return name if count == 1 else f"{name} ({count})"
@@ -107,7 +107,7 @@ class MergeOptions:
     """
 
     skip_invalid: bool = False
-    bookmarks: bool = True
+    add_outlines: bool = True
     import_outlines: bool = True
 
 
@@ -116,14 +116,14 @@ class _Run:
     """The mutable state one merge accumulates across all its inputs.
 
     Bundling it keeps the per-file helper's parameter list to the spec being
-    processed plus this, rather than the writer, the result, the bookmark
-    counts and the options.
+    processed plus this, rather than the writer, the result, the outline
+    title counts and the options.
     """
 
     writer: PdfWriter
     result: MergeResult
     options: MergeOptions
-    used_bookmarks: dict[str, int]
+    used_titles: dict[str, int]
 
 
 _DEFAULT_OPTIONS = MergeOptions()
@@ -180,8 +180,8 @@ def _append(run: _Run, spec: InputSpec) -> None:
         run.writer.append(
             reader,
             outline_item=(
-                _bookmark_name(spec, run.used_bookmarks)
-                if run.options.bookmarks
+                _outline_name(spec, run.used_titles)
+                if run.options.add_outlines
                 else None
             ),
             pages=pages,

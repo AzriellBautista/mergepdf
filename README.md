@@ -17,7 +17,7 @@ $ mergepdf .\documents -o merged.pdf
 - [Page selections](#page-selections)
 - [Ordering](#ordering)
 - [Output](#output)
-- [Bookmarks and outlines](#bookmarks-and-outlines)
+- [Outlines](#outlines)
 - [Duplicate inputs](#duplicate-inputs)
 - [Metadata](#metadata)
 - [Error handling](#error-handling)
@@ -312,9 +312,9 @@ $ mergepdf .\archive\2023 .\archive\2024 -d .\out   # one file per directory
 - The output is never merged into itself. If the output path is also an input,
   that is an error.
 
-## Bookmarks and outlines
+## Outlines
 
-By default each merged file contributes one top-level bookmark, named after
+By default each merged file contributes one top-level outline item, named after
 the file, with any page selection shown in brackets:
 
 ```
@@ -322,12 +322,38 @@ report.pdf
 appendix.pdf [1-3,7]
 ```
 
-Bookmarks already inside each input are imported beneath mergepdf's own entry,
-preserving nesting. Repeated bookmark names are numbered `name (2)`,
-`name (3)`, and so on.
+Outline items already inside each input are imported beneath mergepdf's own
+entry, preserving nesting. Repeated names are numbered `name (2)`, `name (3)`,
+and so on.
 
-- `--no-bookmarks` omits mergepdf's own per-file entries.
-- `--no-import-outlines` leaves existing bookmarks in the input PDFs behind.
+Three flags control this, and they are worth telling apart:
+
+| Flag | Removes | Output outline |
+| --- | --- | --- |
+| *(none)* | — | Per-file entries, plus anything the inputs already had |
+| `--no-add-outlines` | mergepdf's per-file entries | Only what the inputs already had |
+| `--no-import-outlines` | Entries carried over from inputs | Only the per-file entries |
+| `--no-outline` | Both of the above | **Nothing at all** |
+
+The two narrow flags differ in where the entries come from. `--no-add-outlines`
+stops mergepdf creating an entry named after each file; the outline items
+already inside your inputs are still carried over. `--no-import-outlines` does
+the reverse, keeping the per-file entries but leaving the inputs' own outline
+items behind.
+
+`--no-outline` is shorthand for `--no-add-outlines --no-import-outlines`,
+applied after parsing, so it takes effect wherever it appears in the command
+line. Combining it with either narrow flag is allowed but redundant. Under
+`-vv` the resolved pair is logged, so you can see which setting ended up in
+force:
+
+```console
+$ mergepdf .\documents -o merged.pdf --no-outline
+[DEBUG] --no-outline resolved to add_outlines=False import_outlines=False
+```
+
+Any of the three removes outline entries and nothing else. Page count, ordering
+and metadata are unaffected.
 
 ## Duplicate inputs
 
@@ -462,8 +488,9 @@ silently absorbed.
 | `-f`, `--force` | Overwrite an existing output. |
 | `--dry-run` | Print the merge plan; write nothing. |
 | `--skip-invalid` | Skip unreadable inputs instead of aborting. |
-| `--no-bookmarks` | Do not add per-file bookmark entries. |
-| `--no-import-outlines` | Do not carry over input bookmarks. |
+| `--no-outline` | Write no outline at all. Shorthand for the next two. |
+| `--no-add-outlines` | Do not add per-file outline entries. |
+| `--no-import-outlines` | Do not carry over input outline items. |
 | `--metadata` | Set a metadata field, `KEY=VALUE`. Repeatable. |
 | `--quiet` | Errors only. |
 | `-v`, `--verbose` | Repeat for more detail. |
